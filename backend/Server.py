@@ -10,8 +10,6 @@ import os
 from main import *
 
 
-
-
 customers_folder = "../public/customers/"
 
 create_tables()
