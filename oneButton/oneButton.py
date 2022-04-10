@@ -1,3 +1,4 @@
+from cProfile import label
 import json
 import keyboard
 from tkinter import *
@@ -6,13 +7,20 @@ import math
 import pyautogui
 import requests
 
+root = None
 customers = []
-customer_incidents = []
+customer_om = None
+incident_om = None
+incident_variable = None
 
 
 def createWindow():
+    global root
     global customers
-    global customer_incidents
+    global customer_om
+    global incident_om
+    global incident_variable
+
 
     root = Tk()
     root.title("asd")
@@ -32,39 +40,51 @@ def createWindow():
     customers = json.loads(response.text)
     customer_names = [x['name'] for x in customers]
 
-    customer_variables = StringVar(root)
-    customer_variables.set(customer_names[1])
-    w = OptionMenu(root, customer_variables, *customer_names, command=customer_callback)
-    w.pack()
+    variable = StringVar()
+    variable.set(customer_names[0])
+    customer_om = OptionMenu(root, variable, *customer_names, command=customer_callback)
+    customer_om.pack()
 
-    customer_callback(customer_names[1])
-    incidents_dates = [x['datetime'] for x in customer_incidents]
+    id = None
+    for customer in customers:
+        if customer["name"] == customer_names[0]:
+            id = customer["id"]
 
-    incident_variables = StringVar(root)
-    if len(incidents_dates) == 0:
-        incidents_dates.append("-")
-
-    incident_variables.set(incidents_dates[0])
-    w = OptionMenu(root, incident_variables, *incidents_dates)
-    w.pack()
-
+    response = requests.get("http://127.0.0.1:5000/incident/{}".format(id))
+    incidents = json.loads(response.text)
+    incidents_dates = [x['datetime'] for x in incidents]
+    
+    incident_variable = StringVar()
+    if len(incidents) > 0:
+        incident_variable.set(incidents_dates[0])
+    else:
+        incident_variable.set("-")
+    incident_om = OptionMenu(root, incident_variable, *incidents_dates)
+    incident_om.pack()
+    
     root.mainloop()
 
 
 def customer_callback(event):
-    global customer_incidents
-    global customers
-    id = -1
+    global incident_om
+    incident_om["menu"].delete(0, "end")
+
+    id = None
     for customer in customers:
         if customer["name"] == event:
             id = customer["id"]
-            print("found {}".format(id))
 
     response = requests.get("http://127.0.0.1:5000/incident/{}".format(id))
-    customer_incidents = json.loads(response.text)
-    print(customer_incidents)
-    return customer_incidents
+    incidents = json.loads(response.text)
+    incident_dates = [x['datetime'] for x in incidents]
 
+    if len(incident_dates) == 0:
+        incident_variable.set("-")
+    else:
+        incident_variable.set(incident_dates[0])
+    
+    for date in incident_dates:
+        incident_om["menu"].add_command(label=date)
 
 
 while True:
