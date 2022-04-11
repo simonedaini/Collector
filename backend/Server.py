@@ -10,7 +10,7 @@ import os
 from main import *
 
 
-customers_folder = "../public/customers/"
+customers_folder = "../collector/public/customers/"
 
 create_tables()
 
@@ -120,11 +120,14 @@ def deleteIncident(id):
 def createEvidence():
     if request.method == 'POST':
         content = request.get_json()
+        print(content["incidentId"])
+        print(content["datetime"])
+        
         ext = content["image"].split("/")[1].split(";")[0]
         img = content["image"].split("base64,")[1]
         customer = get_customer_name_from_id(get_customerId_from_incidentId(content["incidentId"]))
-        evidence_path = customers_folder + customer + "/" + content["incidentId"] + "/"
-        relative_path = evidence_path.replace("../public", "") + "1." + ext
+        evidence_path = f"{customers_folder}{customer}/{content['incidentId']}"
+        relative_path = evidence_path.replace("../collector/public", "") + "1." + ext
         print(ext)
         print(relative_path)
         res = create_evidence(content["incidentId"], content["datetime"], content["killchain"], content["host"], content["host_type"], relative_path, content["description"])
