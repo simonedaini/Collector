@@ -1,0 +1,12 @@
+sudo apt-get install python3-pil.imagetk
+xhost +
+
+# Screnshots does not work with Wayland, we need Xorg
+
+# To check if we're using wayland use
+echo $XDG_SESSION_TYPE
+
+# To switch to Xorg uncomment #WaylandEnable=false in the following file (make a backup first)
+sudo gedit /etc/gdm3/custom.conf
+
+# Then reboot and the screenshots are now working
