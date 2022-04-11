@@ -31,18 +31,17 @@ def createWindow():
     global selected_customer
     global selected_incident
 
-
     root = Tk()
     root.title("asd")
     root.geometry("800x500")
     root.lift()
-
     
     myScreenshot = pyautogui.screenshot()
 
-    myScreenshot.save("1.jpg")
-    pic = Image.open("1.jpg")
+    myScreenshot.save("screenshot.jpg")
+    pic = Image.open("screenshot.jpg")
 
+    # To compress the image
     # myScreenshot.save("screenshot.jpg")
     # pic = Image.open("screenshot.jpg")
     # pic.save("screenshot.jpg", optimize=True, quality=1)
@@ -57,47 +56,51 @@ def createWindow():
     pic_label = Label(root, image=new_pic)
     pic_label.pack()
 
-    response = requests.get("http://127.0.0.1:5000/customer")
-    customers = json.loads(response.text)
-    customer_names = [x['name'] for x in customers]
+    try:
+        response = requests.get("http://127.0.0.1:5000/customer")
+        customers = json.loads(response.text)
+        customer_names = [x['name'] for x in customers]
 
-    variable = StringVar()
-    variable.set(customer_names[0])
-    selected_customer = customers[0]["id"]
-    customer_om = OptionMenu(root, variable, *customer_names, command=customer_callback)
-    customer_om.pack()
+        variable = StringVar()
+        variable.set(customer_names[0])
+        selected_customer = customers[0]["id"]
+        customer_om = OptionMenu(root, variable, *customer_names, command=customer_callback)
+        customer_om.pack()
 
-    id = None
-    for customer in customers:
-        if customer["name"] == customer_names[0]:
-            id = customer["id"]
-
-    response = requests.get("http://127.0.0.1:5000/customer/{}".format(id))
-    incidents = json.loads(response.text)
+        id = None
+        for customer in customers:
+            if customer["name"] == customer_names[0]:
+                id = customer["id"]
     
-    incidents_dates = [x['date'] for x in incidents]
+        try:
+            response = requests.get("http://127.0.0.1:5000/customer/{}".format(id))
+            incidents = json.loads(response.text)
+        
+            incidents_dates = [x['date'] for x in incidents]
+            
+            incident_variable = StringVar()
+            if len(incidents) > 0:
+                incident_variable.set(incidents_dates[0])
+                selected_incident = incidents[0]["id"]
+            else:
+                incident_variable.set("-")
+                incidents_dates = ["-"]
+            incident_om = OptionMenu(root, incident_variable, *incidents_dates, command=incident_callback)
+            incident_om.pack()
+        except:
+            print("Server Unavailable")
+    except:
+        print("Server Unavailable")
     
-    incident_variable = StringVar()
-    if len(incidents) > 0:
-        incident_variable.set(incidents_dates[0])
-        selected_incident = incidents[0]["id"]
-    else:
-        incident_variable.set("-")
-        incidents_dates = ["-"]
-    incident_om = OptionMenu(root, incident_variable, *incidents_dates, command=incident_callback)
-    incident_om.pack()
-
     send_button = Button(root, text = "Send", command = send_callback)
     send_button.pack()
 
-    
     root.mainloop()
-
 
 
 def customer_callback(event):
     global incident_om
-    global selected_customerù
+    global selected_customer
     global selected_incident
 
     incident_om["menu"].delete(0, "end")
@@ -107,18 +110,23 @@ def customer_callback(event):
         if customer["name"] == event:
             selected_customer = customer["id"]
 
-    response = requests.get("http://127.0.0.1:5000/customer/{}".format(selected_customer))
-    incidents = json.loads(response.text)
-    incident_dates = [x['date'] for x in incidents]
+    try:
+        response = requests.get("http://127.0.0.1:5000/customer/{}".format(selected_customer))
+        incidents = json.loads(response.text)
+        incident_dates = [x['date'] for x in incidents]
 
-    if len(incident_dates) == 0:
-        incident_variable.set("-")
-    else:
-        selected_incident = incidents[0]["id"]
-        incident_variable.set(incident_dates[0])
+        if len(incident_dates) == 0:
+            incident_variable.set("-")
+        else:
+            selected_incident = incidents[0]["id"]
+            incident_variable.set(incident_dates[0])
+        
+        for date in incident_dates:
+            incident_om["menu"].add_command(label=date, command=lambda date=date: incident_callback(date))
     
-    for date in incident_dates:
-        incident_om["menu"].add_command(label=date, command=lambda date=date: incident_callback(date))
+    except:
+        print("Server Unavailable")
+    
     
 
 def incident_callback(event):
@@ -135,24 +143,27 @@ def send_callback():
     global selected_incident
     global incidents
 
-    with open("screenshot.jpg", "rb") as image_file:
-        encoded_string = base64.b64encode(image_file.read()).decode("utf8")
+    try:
+        with open("screenshot.jpg", "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read()).decode("utf8")
 
-    data = {
-        "incidentId": selected_incident,
-        "datetime": str(datetime.now()),
-        "killchain": "-",
-        "host": "-",
-        "host_type": "-",
-        "image": f"data:image/jpeg;base64,{encoded_string}",
-        "description": "-"
-    }
+            data = {
+                "incidentId": selected_incident,
+                "datetime": str(datetime.now()),
+                "killchain": "-",
+                "host": "-",
+                "host_type": "-",
+                "image": f"data:image/jpeg;base64,{encoded_string}",
+                "description": "-"
+            }
 
-    # data = json.dumps(data)
-    print(len(encoded_string))
-
-    response = requests.post("http://127.0.0.1:5000/evidence/create", json=data)
-    print(response.status_code)
+            try:
+                response = requests.post("http://127.0.0.1:5000/evidence/create", json=data)
+            except:
+                print("Server Unavailable")
+            print(response.status_code)
+    except:
+        print("Screenshot Failed")
 
 
 subprocess.call("xhost +".split(), shell=True)

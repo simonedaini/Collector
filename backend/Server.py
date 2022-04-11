@@ -119,14 +119,11 @@ def deleteIncident(id):
 @app.route('/evidence/create', methods=['POST'])
 def createEvidence():
     if request.method == 'POST':
-        content = request.get_json()
-        print(content["incidentId"])
-        print(content["datetime"])
-        
+        content = request.get_json()     
         ext = content["image"].split("/")[1].split(";")[0]
         img = content["image"].split("base64,")[1]
         customer = get_customer_name_from_id(get_customerId_from_incidentId(content["incidentId"]))
-        evidence_path = f"{customers_folder}{customer}/{content['incidentId']}"
+        evidence_path = f"{customers_folder}{customer}/{content['incidentId']}/"
         relative_path = evidence_path.replace("../collector/public", "") + "1." + ext
         print(ext)
         print(relative_path)
