@@ -1,3 +1,5 @@
 keyboard
 pyautogui
 requests
+opencv-contrib-python
+pytesseract

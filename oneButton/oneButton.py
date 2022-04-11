@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import date, datetime
+from glob import glob
 import json
 from pickletools import optimize
 import keyboard
@@ -9,7 +10,9 @@ import pyautogui
 import requests
 import base64
 import subprocess
-
+import pytesseract
+import cv2
+import re
 
 root = None
 customers = []
@@ -19,7 +22,7 @@ incident_om = None
 incident_variable = None
 selected_customer = None
 selected_incident = None
-
+gather_datetime = []
 
 def createWindow():
     global root
@@ -30,6 +33,7 @@ def createWindow():
     global incident_variable
     global selected_customer
     global selected_incident
+    global gather_datetime
 
     root = Tk()
     root.title("asd")
@@ -54,7 +58,17 @@ def createWindow():
     root.geometry("{}x{}".format(width, height + 200))
 
     pic_label = Label(root, image=new_pic)
-    pic_label.pack()
+    pic_label.grid(column=0, row=0, columnspan=10, rowspan=10)
+
+    image = cv2.imread("screenshot.jpg")
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    text = pytesseract.image_to_string(image)
+
+    with open("ocr.txt", "w") as ocr:
+        ocr.write(text)
+
+    ocr_datetime = re.findall(r"\d{1,2}\/\d{1,2}\/\d{4} \d{1,2}:\d{2}:\d{2}", text)
+    print(ocr_datetime)
 
     try:
         response = requests.get("http://127.0.0.1:5000/customer")
@@ -65,7 +79,7 @@ def createWindow():
         variable.set(customer_names[0])
         selected_customer = customers[0]["id"]
         customer_om = OptionMenu(root, variable, *customer_names, command=customer_callback)
-        customer_om.pack()
+        customer_om.grid(row=11, column=0)
 
         id = None
         for customer in customers:
@@ -75,25 +89,37 @@ def createWindow():
         try:
             response = requests.get("http://127.0.0.1:5000/customer/{}".format(id))
             incidents = json.loads(response.text)
-        
-            incidents_dates = [x['date'] for x in incidents]
-            
-            incident_variable = StringVar()
-            if len(incidents) > 0:
-                incident_variable.set(incidents_dates[0])
-                selected_incident = incidents[0]["id"]
-            else:
-                incident_variable.set("-")
-                incidents_dates = ["-"]
-            incident_om = OptionMenu(root, incident_variable, *incidents_dates, command=incident_callback)
-            incident_om.pack()
         except:
-            print("Server Unavailable")
+            print("Server Unavailable 2")
+       
+        incidents_dates = [x['date'] for x in incidents]
+        incident_variable = StringVar()
+        if len(incidents) > 0:
+            incident_variable.set(incidents_dates[0])
+            selected_incident = incidents[0]["id"]
+        else:
+            incident_variable.set("-")
+            incidents_dates = ["-"]
+        incident_om = OptionMenu(root, incident_variable, *incidents_dates, command=incident_callback)
+        incident_om.grid(row=11, column=1)
+
+        datetime_label = Label(root, text="Datetime")
+        datetime_label.grid(row=12, column=0)
+
+        datetime_variable = StringVar()
+        if len(ocr_datetime) > 0:
+            datetime_variable.set(ocr_datetime[0])
+        else:
+            datetime_variable.set("-")
+            ocr_datetime = ["-"]
+        datetime_om = OptionMenu(root, datetime_variable, *ocr_datetime)
+        datetime_om.grid(row=12, column=1)
+
     except:
         print("Server Unavailable")
     
     send_button = Button(root, text = "Send", command = send_callback)
-    send_button.pack()
+    send_button.grid(row=13, column=0)
 
     root.mainloop()
 
@@ -142,6 +168,7 @@ def incident_callback(event):
 def send_callback():
     global selected_incident
     global incidents
+    global root
 
     try:
         with open("screenshot.jpg", "rb") as image_file:
@@ -149,6 +176,7 @@ def send_callback():
 
             data = {
                 "incidentId": selected_incident,
+                "gather_datetime": str(datetime.now()),
                 "datetime": str(datetime.now()),
                 "killchain": "-",
                 "host": "-",
@@ -162,6 +190,7 @@ def send_callback():
             except:
                 print("Server Unavailable")
             print(response.status_code)
+            root.destroy()
     except:
         print("Screenshot Failed")
 
