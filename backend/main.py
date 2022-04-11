@@ -38,7 +38,7 @@ mycursor = mydb.cursor(dictionary=True)
 def create_tables():
     mycursor.execute("CREATE TABLE IF NOT EXISTS Customer (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), logo_path VARCHAR(10000))")
     mycursor.execute("CREATE TABLE IF NOT EXISTS Incident (id INT AUTO_INCREMENT PRIMARY KEY, customerId INT, date DATE, type VARCHAR(10000), FOREIGN KEY(customerId) REFERENCES Customer(id) ON DELETE CASCADE)")
-    mycursor.execute("CREATE TABLE IF NOT EXISTS Evidence (id INT AUTO_INCREMENT PRIMARY KEY, incidentId INT NOT NULL, datetime DATETIME, killchain VARCHAR(255), host VARCHAR(255), host_type VARCHAR(255), image_path VARCHAR(10000), description TEXT NOT NULL, FOREIGN KEY(incidentId) REFERENCES Incident(id) ON DELETE CASCADE)")
+    mycursor.execute("CREATE TABLE IF NOT EXISTS Evidence (id INT AUTO_INCREMENT PRIMARY KEY, incidentId INT NOT NULL, gather_datetime DATETIME, datetime DATETIME, killchain VARCHAR(255), host VARCHAR(255), host_type VARCHAR(255), image_path VARCHAR(10000), description TEXT NOT NULL, FOREIGN KEY(incidentId) REFERENCES Incident(id) ON DELETE CASCADE)")
 
 def drop_tables(tables):
     for table in tables:
@@ -166,9 +166,9 @@ def get_customer_incidents(customerId):
     return myresult
 
 # Creates a new evidence
-def create_evidence(incidentId, datetime, killchain, host, host_type, image_path, description):
-    sql = "INSERT INTO Evidence (incidentId, datetime, killchain, host, host_type, image_path, description) VALUES (%s,%s,%s,%s,%s,%s,%s)"
-    mycursor.execute(sql, [incidentId, datetime, killchain, host, host_type, image_path, description])
+def create_evidence(incidentId, gather_datetime, datetime, killchain, host, host_type, image_path, description):
+    sql = "INSERT INTO Evidence (incidentId, gather_datetime, datetime, killchain, host, host_type, image_path, description) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)"
+    mycursor.execute(sql, [incidentId, gather_datetime, datetime, killchain, host, host_type, image_path, description])
     mydb.commit()
     return 0
 

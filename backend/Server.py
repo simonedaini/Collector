@@ -123,16 +123,19 @@ def createEvidence():
         ext = content["image"].split("/")[1].split(";")[0]
         img = content["image"].split("base64,")[1]
         customer = get_customer_name_from_id(get_customerId_from_incidentId(content["incidentId"]))
-        evidence_path = f"{customers_folder}{customer}/{content['incidentId']}/"
-        relative_path = evidence_path.replace("../collector/public", "") + "1." + ext
-        print(ext)
-        print(relative_path)
-        res = create_evidence(content["incidentId"], content["datetime"], content["killchain"], content["host"], content["host_type"], relative_path, content["description"])
+
+        count = 1
+        evidence_path = "{}{}/{}/{}.{}".format(customers_folder, customer, content['incidentId'], count, ext)
+        while os.path.exists(evidence_path):
+            count += 1
+            evidence_path = "{}{}/{}/{}.{}".format(customers_folder, customer, content['incidentId'], count, ext)
+        
+        relative_path = evidence_path.replace("../collector/public", "")
+        res = create_evidence(content["incidentId"], content["gather_datetime"], content["datetime"], content["killchain"], content["host"], content["host_type"], relative_path, content["description"])
         if res == 0:
-            if os.path.exists(evidence_path) == False:
-                os.makedirs(evidence_path)
-                print("creating folder {}".format(evidence_path))
-            Image.open(io.BytesIO(base64.b64decode(img))).save(evidence_path + "/1." + ext)
+            if os.path.exists(os.path.dirname(evidence_path)) == False:
+                os.makedirs(os.path.dirname(evidence_path))
+            Image.open(io.BytesIO(base64.b64decode(img))).save(evidence_path)
             response = Response(status=201)
         else:
             response = Response(status=404)
