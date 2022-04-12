@@ -1,6 +1,7 @@
 sudo apt-get install python3-pil.imagetk
 sudo apt install tesseract-ocr
 sudo apt install libtesseract-dev
+sudo apt-get install xclip
 xhost +
 
 # Screnshots does not work with Wayland, we need Xorg

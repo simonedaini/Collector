@@ -1,18 +1,20 @@
-from datetime import date, datetime
-from glob import glob
+from datetime import datetime
+from email.mime import image
+from time import sleep
+from pynput import keyboard, mouse
 import json
 from pickletools import optimize
-import keyboard
 from tkinter import *
 from PIL import ImageTk, Image
 import math
-import pyautogui
 import requests
 import base64
-import subprocess
 import pytesseract
 import cv2
 import re
+import os
+
+
 
 root = None
 customers = []
@@ -23,6 +25,8 @@ incident_variable = None
 selected_customer = None
 selected_incident = None
 gather_datetime = []
+image_name = "1.png"
+
 
 def createWindow():
     global root
@@ -39,16 +43,8 @@ def createWindow():
     root.title("asd")
     root.geometry("800x500")
     root.lift()
-    
-    myScreenshot = pyautogui.screenshot()
 
-    myScreenshot.save("screenshot.jpg")
-    pic = Image.open("screenshot.jpg")
-
-    # To compress the image
-    # myScreenshot.save("screenshot.jpg")
-    # pic = Image.open("screenshot.jpg")
-    # pic.save("screenshot.jpg", optimize=True, quality=1)
+    pic = Image.open(image_name)
 
     height = 400
     width = math.floor(pic.width * height / pic.height)
@@ -60,7 +56,7 @@ def createWindow():
     pic_label = Label(root, image=new_pic)
     pic_label.grid(column=0, row=0, columnspan=10, rowspan=10)
 
-    image = cv2.imread("screenshot.jpg")
+    image = cv2.imread(image_name)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     text = pytesseract.image_to_string(image)
 
@@ -68,7 +64,7 @@ def createWindow():
         ocr.write(text)
 
     ocr_datetime = re.findall(r"\d{1,2}\/\d{1,2}\/\d{4} \d{1,2}:\d{2}:\d{2}", text)
-    print(ocr_datetime)
+    print("OCR Gathered datetimes = ".format(ocr_datetime))
 
     try:
         response = requests.get("http://127.0.0.1:5000/customer")
@@ -171,33 +167,73 @@ def send_callback():
     global root
 
     try:
-        with open("screenshot.jpg", "rb") as image_file:
+        with open(image_name, "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode("utf8")
-
-            data = {
-                "incidentId": selected_incident,
-                "gather_datetime": str(datetime.now()),
-                "datetime": str(datetime.now()),
-                "killchain": "-",
-                "host": "-",
-                "host_type": "-",
-                "image": f"data:image/jpeg;base64,{encoded_string}",
-                "description": "-"
-            }
-
-            try:
-                response = requests.post("http://127.0.0.1:5000/evidence/create", json=data)
-            except:
-                print("Server Unavailable")
-            print(response.status_code)
-            root.destroy()
     except:
-        print("Screenshot Failed")
+        print("udable to open {}".format(image_name))  
+
+    image_data = "data:image/{};base64,{}".format(image_name.split(".")[1], encoded_string)
+
+    data = {
+        "incidentId": selected_incident,
+        "gather_datetime": str(datetime.now()),
+        "datetime": str(datetime.now()),
+        "killchain": "-",
+        "host": "-",
+        "host_type": "-",
+        "image": image_data,
+        "description": "-"
+    }
+
+    try:
+        response = requests.post("http://127.0.0.1:5000/evidence/create", json=data)
+    except:
+        print("Server Unavailable")
+    print(response.status_code)
+    root.destroy()
 
 
-subprocess.call("xhost +".split(), shell=True)
+# subprocess.run("xhost +")
 
-while True:
-    pressed = keyboard.read_key()
-    if pressed == "alt gr":
+
+press = []
+screen = False
+
+def on_press(key):
+    global screen
+    try:
+        press.append(key.char)
+    except AttributeError:
+        press.append(key)
+
+    if keyboard.Key.shift in press and keyboard.Key.ctrl in press and "*" in press:
+        screen = True
+
+
+def on_release(key):
+    global screen
+    try:
+        k = key.char
+        if k in press:
+            press.remove(k)
+    except:
+        if key in press:
+            press.remove(key)
+
+def on_mouse_click(x, y, button, pressed):
+    global screen
+    if screen == True and pressed == False:
+        sleep(1)
+        os.system("xclip -selection clipboard -t image/png -o > '1.png'")
+        screen = False
         createWindow()
+
+# Collect events until released
+keyboard_listener =  keyboard.Listener(on_press=on_press, on_release=on_release)
+
+mouse_listener =  mouse.Listener(on_click=on_mouse_click)
+keyboard_listener.start()
+mouse_listener.start()
+
+keyboard_listener.join()
+mouse_listener.join()
