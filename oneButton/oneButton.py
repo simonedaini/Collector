@@ -24,6 +24,7 @@ incident_om = None
 incident_variable = None
 selected_customer = None
 selected_incident = None
+ocr_datetime = []
 gather_datetime = []
 image_name = "1.png"
 
@@ -37,6 +38,7 @@ def createWindow():
     global incident_variable
     global selected_customer
     global selected_incident
+    global ocr_datetime
     global gather_datetime
 
     root = Tk()
@@ -58,13 +60,13 @@ def createWindow():
 
     image = cv2.imread(image_name)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    text = pytesseract.image_to_string(image)
+    text = pytesseract.image_to_string(image, config="--psm 11")
 
     with open("ocr.txt", "w") as ocr:
         ocr.write(text)
 
     ocr_datetime = re.findall(r"\d{1,2}\/\d{1,2}\/\d{4} \d{1,2}:\d{2}:\d{2}", text)
-    print("OCR Gathered datetimes = ".format(ocr_datetime))
+    
 
     try:
         response = requests.get("http://127.0.0.1:5000/customer")
@@ -165,6 +167,7 @@ def send_callback():
     global selected_incident
     global incidents
     global root
+    global ocr
 
     try:
         with open(image_name, "rb") as image_file:
@@ -188,8 +191,7 @@ def send_callback():
     try:
         response = requests.post("http://127.0.0.1:5000/evidence/create", json=data)
     except:
-        print("Server Unavailable")
-    print(response.status_code)
+        print("Server Unavailable {}".format(response.status_code))
     root.destroy()
 
 

@@ -1,10 +1,48 @@
-4/25/2014 6:33:49 PM
-3/18/2014 10:48:19 AM
-3/8/2014 6:48:18 AM
-3/5/2014 5:02:49 PM
-3/5/2014 1:24:48 PM
+Event 1023, .NET Runtime
 
-  
+General | Details
 
- 
+(Application: Facebook exe
+
+|Framework Version: v4.0.30319
+
+|Description: The process was terminated due to an internal error in the |NET Runtime at IP 00007FFB38096E49 (00007FFB2B200000) with exit
+
+Icode 80131506.
+
+Log Name:
+
+Application
+
+Source:
+
+NET Runtime
+
+15/29/2014 4:00:18 PM
+
+Logged:
+
+Event ID:
+
+1023
+
+Task Category: None
+
+Level:
+
+Error
+
+Classic
+
+User:
+
+NWA
+
+edit
+
+OpCode:
+
+‘More Information:
+
+Event Log Online Help
 
