@@ -5,7 +5,9 @@ from pynput import keyboard, mouse
 import json
 from pickletools import optimize
 from tkinter import *
-from PIL import ImageTk, Image
+from PIL import ImageTk, Image, ImageGrab
+from sys import platform
+
 import math
 import requests
 import base64
@@ -13,6 +15,7 @@ import pytesseract
 import cv2
 import re
 import os
+
 
 
 
@@ -222,11 +225,18 @@ def on_release(key):
         if key in press:
             press.remove(key)
 
+linux=True
+windows=False
+
 def on_mouse_click(x, y, button, pressed):
     global screen
     if screen == True and pressed == False:
         sleep(1)
-        os.system("xclip -selection clipboard -t image/png -o > '1.png'")
+        if platform != "win32":
+            im = ImageGrab.grabclipboard()
+            im.save('1.png','PNG')
+        else:
+            os.system("xclip -selection clipboard -t image/png -o > '1.png'")
         screen = False
         createWindow()
 

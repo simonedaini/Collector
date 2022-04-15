@@ -3,3 +3,4 @@ pyautogui
 requests
 opencv-contrib-python
 pytesseract
+pynput
